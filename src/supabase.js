@@ -5,12 +5,22 @@ const SUPABASE_KEY_KEY = 'pr-tracker-supabase-key'
 
 let client = null
 
+function getStoredCredentials() {
+  const envUrl = import.meta.env.VITE_SUPABASE_URL
+  const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+  const lsUrl = localStorage.getItem(SUPABASE_URL_KEY)
+  const lsKey = localStorage.getItem(SUPABASE_KEY_KEY)
+
+  if (envUrl && envKey) return { url: envUrl, key: envKey }
+  if (lsUrl && lsKey) return { url: lsUrl, key: lsKey }
+  return null
+}
+
 export function getClient() {
   if (client) return client
-  const url = localStorage.getItem(SUPABASE_URL_KEY)
-  const key = localStorage.getItem(SUPABASE_KEY_KEY)
-  if (!url || !key) return null
-  client = createClient(url, key)
+  const creds = getStoredCredentials()
+  if (!creds) return null
+  client = createClient(creds.url, creds.key)
   return client
 }
 
@@ -27,7 +37,7 @@ export function clearCredentials() {
 }
 
 export function hasCredentials() {
-  return !!(localStorage.getItem(SUPABASE_URL_KEY) && localStorage.getItem(SUPABASE_KEY_KEY))
+  return !!getStoredCredentials()
 }
 
 export async function testConnection() {

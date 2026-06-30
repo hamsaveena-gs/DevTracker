@@ -225,6 +225,18 @@ export default function App() {
   useEffect(() => {
     if (hasCredentials()) {
       setSupabaseConnected(true)
+      const sb = getClient()
+      if (sb) {
+        sb.from('prs').select('*').then(({ data, error }) => {
+          if (!error && data && data.length > 0) {
+            setPrs(data.map(r => ({
+              id: r.id, title: r.title, prUrl: r.pr_url || '', jiraTicket: r.jira_ticket || '',
+              figmaUrl: r.figma_url || '', sprint: r.sprint || '', status: r.status || 'dev',
+              notes: r.notes || '', createdAt: r.created_at, statusChangedAt: r.status_changed_at || r.created_at,
+            })))
+          }
+        })
+      }
     }
   }, [])
 
