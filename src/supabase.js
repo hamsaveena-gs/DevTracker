@@ -33,10 +33,14 @@ export function hasCredentials() {
 export async function testConnection() {
   const sb = getClient()
   if (!sb) throw new Error('Not connected')
-  const { error } = await sb.from('prs').select('id', { count: 'exact', head: true })
-  if (error && error.code === '42P01') {
-    throw new Error('Table "prs" does not exist. Create it in Supabase SQL editor:\n\nCREATE TABLE prs (\n  id TEXT PRIMARY KEY,\n  title TEXT NOT NULL,\n  pr_url TEXT,\n  jira_ticket TEXT,\n  figma_url TEXT,\n  sprint TEXT,\n  status TEXT DEFAULT \'dev\',\n  notes TEXT DEFAULT \'\',\n  created_at TIMESTAMPTZ DEFAULT NOW(),\n  status_changed_at TIMESTAMPTZ DEFAULT NOW()\n);')
+
+  const { data, error } = await sb.from('prs').select('id', { count: 'exact', head: true })
+
+  if (error) {
+    if (error.code === '42P01') {
+      throw new Error('Table "prs" does not exist. Run this in Supabase SQL Editor:\n\nCREATE TABLE prs (\n  id TEXT PRIMARY KEY,\n  title TEXT NOT NULL,\n  pr_url TEXT,\n  jira_ticket TEXT,\n  figma_url TEXT,\n  sprint TEXT,\n  status TEXT DEFAULT \'dev\',\n  notes TEXT DEFAULT \'\',\n  created_at TIMESTAMPTZ DEFAULT NOW(),\n  status_changed_at TIMESTAMPTZ DEFAULT NOW()\n);')
+    }
+    throw new Error(error.message || 'Connection failed. Check URL and anon key.')
   }
-  if (error) throw error
   return true
 }

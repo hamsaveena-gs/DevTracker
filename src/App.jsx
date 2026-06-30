@@ -252,8 +252,12 @@ export default function App() {
   }, [prs])
 
   async function connectSupabase() {
+    let url = dbUrl.trim()
+    if (!url.startsWith('http')) url = 'https://' + url
+    const key = dbKey.trim()
+    if (!url || !key) { setDbStatus({ type: 'error', text: 'Fill in both fields' }); return }
     setDbStatus({ type: 'loading', text: 'Connecting...' })
-    saveCredentials(dbUrl.trim(), dbKey.trim())
+    saveCredentials(url, key)
     try {
       await testConnection()
       setSupabaseConnected(true)
