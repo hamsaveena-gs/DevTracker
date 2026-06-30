@@ -261,7 +261,7 @@ export default function App() {
     if (supabaseConnected && prs.length > 0) {
       syncToSupabase(prs)
     }
-  }, [prs])
+  }, [prs, supabaseConnected])
 
   async function connectSupabase() {
     let url = dbUrl.trim()
