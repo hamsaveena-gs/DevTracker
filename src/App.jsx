@@ -45,7 +45,7 @@ function ageColor(dateStr) {
   return 'text-red-600'
 }
 
-function CardModal({ pr, onClose, onMove, onDelete, onUpdateNotes, onUpdateSprint, onUpdateFigma, allSprints }) {
+function CardModal({ pr, onClose, onMove, onDelete, onUpdateNotes, onUpdateSprint, onUpdateFigma, onUpdatePrUrl, onUpdateJira, onUpdateTitle, allSprints }) {
   if (!pr) return null
   const col = COLUMNS.find(c => c.id === pr.status)
   const prevCol = COLUMNS[COLUMNS.findIndex(c => c.id === pr.status) - 1]
@@ -55,11 +55,20 @@ function CardModal({ pr, onClose, onMove, onDelete, onUpdateNotes, onUpdateSprin
   const [sprintInput, setSprintInput] = useState(pr.sprint || '')
   const [editingFigma, setEditingFigma] = useState(false)
   const [figmaInput, setFigmaInput] = useState(pr.figmaUrl || '')
+  const [editingPrUrl, setEditingPrUrl] = useState(false)
+  const [prUrlInput, setPrUrlInput] = useState(pr.prUrl || '')
+  const [editingJira, setEditingJira] = useState(false)
+  const [jiraInput, setJiraInput] = useState(pr.jiraTicket || '')
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleInput, setTitleInput] = useState(pr.title || '')
 
   useEffect(() => {
     setNotes(pr.notes || '')
     setSprintInput(pr.sprint || '')
     setFigmaInput(pr.figmaUrl || '')
+    setPrUrlInput(pr.prUrl || '')
+    setJiraInput(pr.jiraTicket || '')
+    setTitleInput(pr.title || '')
   }, [pr.id])
 
   function saveSprint() {
@@ -72,48 +81,70 @@ function CardModal({ pr, onClose, onMove, onDelete, onUpdateNotes, onUpdateSprin
     onClose()
   }
 
+  function Pencil() { return <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg> }
+  function Check() { return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> }
+  function XIcon() { return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg> }
+
+  function EditableField({ label, value, color, editing, inputVal, setInputVal, onSave, onCancel, children }) {
+    return (
+      <div className="group">
+        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</label>
+        {editing ? (
+          <div className="flex items-center gap-1 mt-1">
+            <input value={inputVal} onChange={e => setInputVal(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') onSave(); if (e.key === 'Escape') onCancel() }} className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" autoFocus />
+            <button onClick={onSave} className="p-1.5 rounded text-green-600 hover:bg-green-50 cursor-pointer"><Check /></button>
+            <button onClick={onCancel} className="p-1.5 rounded text-gray-400 hover:bg-gray-100 cursor-pointer"><XIcon /></button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 mt-0.5 cursor-pointer" onClick={() => { setInputVal(value || '') }}>
+            <p className={`text-sm truncate ${value ? color : 'text-gray-400'}`}>{value || '—'}</p>
+            <span className="opacity-0 group-hover:opacity-100 text-gray-400 transition-opacity"><Pencil /></span>
+            {children}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-start justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 pr-4 break-words">{pr.title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none cursor-pointer">&times;</button>
+        <div className="flex items-start justify-between mb-4 gap-2">
+          {editingTitle ? (
+            <div className="flex items-center gap-1 flex-1">
+              <input value={titleInput} onChange={e => setTitleInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { if (titleInput !== (pr.title || '')) onUpdateTitle(pr.id, titleInput); setEditingTitle(false) }; if (e.key === 'Escape') { setTitleInput(pr.title || ''); setEditingTitle(false) } }} className="flex-1 text-xl font-semibold border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" autoFocus />
+              <button onClick={() => { if (titleInput !== (pr.title || '')) onUpdateTitle(pr.id, titleInput); setEditingTitle(false) }} className="p-1.5 rounded text-green-600 hover:bg-green-50 cursor-pointer"><Check /></button>
+              <button onClick={() => { setTitleInput(pr.title || ''); setEditingTitle(false) }} className="p-1.5 rounded text-gray-400 hover:bg-gray-100 cursor-pointer"><XIcon /></button>
+            </div>
+          ) : (
+            <h2 className="text-xl font-semibold text-gray-900 break-words min-w-0 cursor-pointer group flex items-center gap-2" onClick={() => setEditingTitle(true)}>
+              {pr.title}
+              <span className="opacity-0 group-hover:opacity-100 text-gray-400 transition-opacity text-base"><Pencil /></span>
+            </h2>
+          )}
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none cursor-pointer shrink-0">&times;</button>
         </div>
 
-        <div className="space-y-3">
-          <div>
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Sprint</label>
-            {editingSprint ? (
-              <div className="flex gap-1.5 mt-1">
-                <input value={sprintInput} onChange={e => setSprintInput(e.target.value)} onBlur={saveSprint} onKeyDown={e => { if (e.key === 'Enter') saveSprint(); if (e.key === 'Escape') { setSprintInput(pr.sprint || ''); setEditingSprint(false) } }} className="flex-1 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" autoFocus />
-                {allSprints.filter(s => s !== pr.sprint).slice(0, 5).map(s => (
-                  <button key={s} onMouseDown={e => e.preventDefault()} onClick={() => { setSprintInput(s); onUpdateSprint(pr.id, s); setEditingSprint(false) }} className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer">{s}</button>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 mt-0.5">
-                <p className="text-sm text-gray-800 font-medium">{pr.sprint || '—'}</p>
-                <button onClick={() => setEditingSprint(true)} className="text-xs text-indigo-500 hover:text-indigo-700 cursor-pointer">edit</button>
-              </div>
-            )}
+        <div className="space-y-4">
+          <div className="group" onClick={() => setEditingSprint(true)}>
+            <EditableField label="Sprint" value={pr.sprint} color="text-gray-800" editing={editingSprint} inputVal={sprintInput} setInputVal={setSprintInput} onSave={saveSprint} onCancel={() => { setSprintInput(pr.sprint || ''); setEditingSprint(false) }}>
+              {allSprints.filter(s => s !== pr.sprint).slice(0, 5).map(s => (
+                <button key={s} onMouseDown={e => e.preventDefault()} onClick={() => { setSprintInput(s); onUpdateSprint(pr.id, s); setEditingSprint(false) }} className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer">{s}</button>
+              ))}
+            </EditableField>
           </div>
 
-          <div>
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Figma</label>
-            {editingFigma ? (
-              <div className="flex gap-1.5 mt-1">
-                <input value={figmaInput} onChange={e => setFigmaInput(e.target.value)} onBlur={() => { if (figmaInput !== (pr.figmaUrl || '')) onUpdateFigma(pr.id, figmaInput); setEditingFigma(false) }} onKeyDown={e => { if (e.key === 'Enter') { if (figmaInput !== (pr.figmaUrl || '')) onUpdateFigma(pr.id, figmaInput); setEditingFigma(false) }; if (e.key === 'Escape') { setFigmaInput(pr.figmaUrl || ''); setEditingFigma(false) } }} className="flex-1 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" autoFocus />
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 mt-0.5">
-                <p className={`text-sm truncate ${pr.figmaUrl ? 'text-pink-600' : 'text-gray-400'}`}>{pr.figmaUrl || '—'}</p>
-                <button onClick={() => setEditingFigma(true)} className="text-xs text-indigo-500 hover:text-indigo-700 cursor-pointer">edit</button>
-              </div>
-            )}
+          <div className="group" onClick={() => setEditingFigma(true)}>
+            <EditableField label="Figma" value={pr.figmaUrl} color="text-pink-600" editing={editingFigma} inputVal={figmaInput} setInputVal={setFigmaInput} onSave={() => { onUpdateFigma(pr.id, figmaInput); setEditingFigma(false) }} onCancel={() => { setFigmaInput(pr.figmaUrl || ''); setEditingFigma(false) }} />
           </div>
 
-          {pr.prUrl && <div><label className="text-xs font-medium text-gray-500 uppercase tracking-wide">PR Link</label><p className="block text-sm text-indigo-600 truncate mt-0.5">{pr.prUrl}</p></div>}
-          {pr.jiraTicket && <div><label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Jira Ticket</label><p className="block text-sm text-purple-600 mt-0.5">{pr.jiraTicket}</p></div>}
+          <div className="group" onClick={() => setEditingPrUrl(true)}>
+            <EditableField label="PR Link" value={pr.prUrl} color="text-indigo-600" editing={editingPrUrl} inputVal={prUrlInput} setInputVal={setPrUrlInput} onSave={() => { onUpdatePrUrl(pr.id, prUrlInput); setEditingPrUrl(false) }} onCancel={() => { setPrUrlInput(pr.prUrl || ''); setEditingPrUrl(false) }} />
+          </div>
+
+          <div className="group" onClick={() => setEditingJira(true)}>
+            <EditableField label="Jira Ticket" value={pr.jiraTicket} color="text-purple-600" editing={editingJira} inputVal={jiraInput} setInputVal={setJiraInput} onSave={() => { onUpdateJira(pr.id, jiraInput); setEditingJira(false) }} onCancel={() => { setJiraInput(pr.jiraTicket || ''); setEditingJira(false) }} />
+          </div>
 
           <div>
             <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Status</label>
@@ -189,7 +220,7 @@ function Dashboard({ prs, onSelectSprint, setSelectedPr }) {
             return (
               <div key={pr.id} onClick={() => setSelectedPr(pr)} className="flex items-center gap-4 px-5 py-3 hover:bg-gray-50 transition-colors cursor-pointer">
                 <div className={`w-2 h-2 rounded-full ${sc.bg} shrink-0`} />
-                <div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-900 truncate">{pr.title}</p><p className="text-xs text-gray-400 truncate">{pr.sprint}{pr.jiraTicket ? ` · ${pr.jiraTicket}` : ''}</p></div>
+                <div className="flex-1 min-w-0 overflow-hidden"><p className="text-sm font-medium text-gray-900 truncate">{pr.title}</p><p className="text-xs text-gray-400 truncate">{pr.sprint}{pr.jiraTicket ? ` · ${pr.jiraTicket}` : ''}</p></div>
                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${sc.light} ${sc.text} shrink-0`}>{COLUMNS.find(c => c.id === pr.status)?.label || pr.status}</span>
               </div>
             )
@@ -323,6 +354,9 @@ export default function App() {
   function updateNotes(id, notes) { setPrs(prs.map(p => p.id === id ? { ...p, notes } : p)) }
   function updateSprint(id, sprint) { setPrs(prs.map(p => p.id === id ? { ...p, sprint } : p)) }
   function updateFigma(id, figmaUrl) { setPrs(prs.map(p => p.id === id ? { ...p, figmaUrl } : p)) }
+  function updatePrUrl(id, prUrl) { setPrs(prs.map(p => p.id === id ? { ...p, prUrl } : p)) }
+  function updateJira(id, jiraTicket) { setPrs(prs.map(p => p.id === id ? { ...p, jiraTicket } : p)) }
+  function updateTitle(id, title) { setPrs(prs.map(p => p.id === id ? { ...p, title } : p)) }
   function deletePr(id) { setPrs(prs.filter(p => p.id !== id)) }
   function getColumnPrs(status) { return prs.filter(p => p.status === status && p.sprint === currentSprint) }
 
@@ -446,15 +480,15 @@ export default function App() {
                     </div>
                     <div className="space-y-2">
                       {columnPrs.map(pr => (
-                        <div key={pr.id} onClick={() => setSelectedPr(pr)} className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 hover:shadow-md hover:border-gray-300 transition-all cursor-pointer">
-                          <div className="flex items-center gap-1.5 mb-1.5">
-                            {pr.jiraTicket && <span className="text-xs font-mono text-purple-600 bg-purple-50 px-2 py-0.5 rounded">{pr.jiraTicket}</span>}
-                            {pr.figmaUrl && <span className="text-xs text-pink-600 bg-pink-50 px-1.5 py-0.5 rounded">figma</span>}
+                        <div key={pr.id} onClick={() => setSelectedPr(pr)} className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 hover:shadow-md hover:border-gray-300 transition-all cursor-pointer overflow-hidden">
+                          <div className="flex items-center flex-wrap gap-1.5 mb-1.5 min-w-0">
+                            {pr.jiraTicket && <span className="text-xs font-mono text-purple-600 bg-purple-50 px-2 py-0.5 rounded truncate max-w-full">{pr.jiraTicket}</span>}
+                            {pr.figmaUrl && <span className="text-xs text-pink-600 bg-pink-50 px-1.5 py-0.5 rounded shrink-0">figma</span>}
                           </div>
-                          <h4 className="font-medium text-gray-900 text-sm leading-snug">{pr.title}</h4>
+                          <h4 className="font-medium text-gray-900 text-sm leading-snug truncate">{pr.title}</h4>
                           {pr.prUrl && <p className="text-xs text-gray-400 truncate mt-1">{pr.prUrl.replace(/^https?:\/\//, '')}</p>}
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <span className="text-xs text-gray-400">{new Date(pr.createdAt).toLocaleDateString()}</span>
+                          <div className="flex items-center flex-wrap gap-2 mt-1.5">
+                            <span className="text-xs text-gray-400 shrink-0">{new Date(pr.createdAt).toLocaleDateString()}</span>
                             {pr.statusChangedAt && <span className={`text-xs font-medium ${ageColor(pr.statusChangedAt)}`}>{timeAgo(pr.statusChangedAt)}</span>}
                             {pr.notes ? <span className="text-xs text-gray-400">· notes</span> : null}
                           </div>
@@ -472,7 +506,7 @@ export default function App() {
       </div>
 
       {selectedPr && (
-        <CardModal pr={selectedPr} onClose={() => setSelectedPr(null)} onMove={movePr} onDelete={deletePr} onUpdateNotes={updateNotes} onUpdateSprint={updateSprint} onUpdateFigma={updateFigma} allSprints={allSprints} />
+        <CardModal pr={selectedPr} onClose={() => setSelectedPr(null)} onMove={movePr} onDelete={deletePr} onUpdateNotes={updateNotes} onUpdateSprint={updateSprint} onUpdateFigma={updateFigma} onUpdatePrUrl={updatePrUrl} onUpdateJira={updateJira} onUpdateTitle={updateTitle} allSprints={allSprints} />
       )}
     </div>
   )
