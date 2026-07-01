@@ -77,6 +77,12 @@ function CardModal({ pr, onClose, onMove, onDelete, onUpdateNotes, onUpdateSprin
   }
 
   function handleMove(target) {
+    if (editingSprint && sprintInput !== (pr.sprint || '')) onUpdateSprint(pr.id, sprintInput)
+    if (editingFigma && figmaInput !== (pr.figmaUrl || '')) onUpdateFigma(pr.id, figmaInput)
+    if (editingPrUrl && prUrlInput !== (pr.prUrl || '')) onUpdatePrUrl(pr.id, prUrlInput)
+    if (editingJira && jiraInput !== (pr.jiraTicket || '')) onUpdateJira(pr.id, jiraInput)
+    if (editingTitle && titleInput !== (pr.title || '')) onUpdateTitle(pr.id, titleInput)
+    setEditingSprint(false); setEditingFigma(false); setEditingPrUrl(false); setEditingJira(false); setEditingTitle(false)
     onMove(pr.id, target)
     onClose()
   }
@@ -129,7 +135,7 @@ function CardModal({ pr, onClose, onMove, onDelete, onUpdateNotes, onUpdateSprin
           <div className="group" onClick={() => setEditingSprint(true)}>
             <EditableField label="Sprint" value={pr.sprint} color="text-gray-800" editing={editingSprint} inputVal={sprintInput} setInputVal={setSprintInput} onSave={saveSprint} onCancel={() => { setSprintInput(pr.sprint || ''); setEditingSprint(false) }}>
               {allSprints.filter(s => s !== pr.sprint).slice(0, 5).map(s => (
-                <button key={s} onMouseDown={e => e.preventDefault()} onClick={() => { setSprintInput(s); onUpdateSprint(pr.id, s); setEditingSprint(false) }} className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer">{s}</button>
+                <button key={s} onClick={e => { e.stopPropagation(); setSprintInput(s); onUpdateSprint(pr.id, s); setEditingSprint(false) }} className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer">{s}</button>
               ))}
             </EditableField>
           </div>
@@ -174,7 +180,6 @@ function CardModal({ pr, onClose, onMove, onDelete, onUpdateNotes, onUpdateSprin
 
 function Dashboard({ prs, onSelectSprint, setSelectedPr }) {
   const sprints = [...new Set(prs.map(p => p.sprint).filter(Boolean))].sort().reverse()
-
 
   return (
     <div className="space-y-8">
